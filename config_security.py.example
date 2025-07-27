@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+"""
+Security Configuration for Instagram Bot
+Contains sensitive information like API keys, passwords, and credentials
+
+IMPORTANT: This file should NOT be committed to version control
+Add config_security.py to your .gitignore file
+
+Copy this file to config_security.py and update with your actual credentials
+"""
+
+###################
+## SFTP SERVER CREDENTIALS
+###################
+
+# SFTP server authentication details
+SFTP_SERVER = "your-sftp-server.com"
+SFTP_USER = "your-username"
+SFTP_PASS = "your-password"
+
+###################
+## FACEBOOK/INSTAGRAM API CREDENTIALS
+###################
+
+# IMPORTANT: Replace these with your actual values from Facebook Developer Portal
+APP_ID = "your-app-id-here"
+APP_SECRET = "your-app-secret-here"
+IG_ACCOUNT_ID = "your-instagram-account-id"
