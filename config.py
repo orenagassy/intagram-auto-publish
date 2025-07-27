@@ -26,9 +26,7 @@ TOKEN_FILE_PATH = "instagram_token.json"
 ## SFTP SERVER CONFIGURATION
 ###################
 
-# Non-sensitive SFTP settings (sensitive credentials are in config_security.py)
-SFTP_REMOTE_DIR_PATH = '/public_html/wp-content/uploads/2022/06/'
-WEB_DIR_PATH = "https://foxdigital.co.il/wp-content/uploads/2022/06/"
+# SFTP settings moved to config_security.py for better security
 
 ###################
 ## FACEBOOK/INSTAGRAM API CONFIGURATION
@@ -78,7 +76,7 @@ REELS_THUMB_OFFSET = '10'
 
 # Controls verbosity of debug output
 # 0 = Silent (only errors), 1 = Basic info, 2 = Detailed debug, 3 = Verbose debug
-DEBUG_VERBOSITY = 2
+DEBUG_VERBOSITY = 1
 
 # Enable/disable specific debug categories
 DEBUG_FILE_OPERATIONS = True
@@ -86,6 +84,24 @@ DEBUG_API_CALLS = True
 DEBUG_CAPTION_GENERATION = True
 DEBUG_NETWORK_OPERATIONS = True
 DEBUG_TOKEN_MANAGEMENT = True
+
+# PowerShell color codes for debug messages
+DEBUG_COLORS = {
+    'general': '\033[37m',      # White
+    'file_ops': '\033[36m',     # Cyan
+    'api': '\033[32m',          # Green
+    'caption': '\033[35m',      # Magenta
+    'network': '\033[34m',      # Blue
+    'token': '\033[33m',        # Yellow
+    'error': '\033[31m',        # Red
+    'success': '\033[92m',      # Bright Green
+    'warning': '\033[93m',      # Bright Yellow
+    'info': '\033[96m',         # Bright Cyan
+    'reset': '\033[0m'          # Reset to default
+}
+
+# Enable/disable colored output
+DEBUG_USE_COLORS = True
 
 ###################
 ## API AND RESPONSE SETTINGS

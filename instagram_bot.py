@@ -24,14 +24,15 @@ except ImportError:
     print("WARNING: config_security.py not found. Please create it with your API credentials.")
     print("See config_security.py.example for template.")
 
-def debug_print(message, category="general", verbosity_level=1):
+def debug_print(message, category="general", verbosity_level=1, message_type="info"):
     """
-    Print debug messages based on configuration settings
+    Print color-coded debug messages based on configuration settings
     
     Args:
         message (str): The debug message to print
         category (str): Category of debug message (file_ops, api, caption, network, token, general)
         verbosity_level (int): Required verbosity level (1=basic, 2=detailed, 3=verbose)
+        message_type (str): Type of message for coloring (info, success, warning, error)
     """
     # Check if overall verbosity level allows this message
     if DEBUG_VERBOSITY < verbosity_level:
@@ -50,10 +51,44 @@ def debug_print(message, category="general", verbosity_level=1):
     if category in category_flags and not category_flags[category]:
         return
     
+    # Get colors for category and message type
+    if DEBUG_USE_COLORS:
+        category_color = DEBUG_COLORS.get(category, DEBUG_COLORS['general'])
+        type_color = DEBUG_COLORS.get(message_type, DEBUG_COLORS['info'])
+        reset_color = DEBUG_COLORS['reset']
+    else:
+        category_color = type_color = reset_color = ''
+    
     # Add timestamp and category prefix
     timestamp = datetime.now().strftime('%H:%M:%S')
     category_prefix = f"[{category.upper()}]" if category != "general" else ""
-    print(f"{timestamp} {category_prefix} DEBUG: {message}")
+    
+    # Print with colors
+    if message_type == "error":
+        print(f"{type_color}{timestamp} {category_prefix} ERROR: {message}{reset_color}")
+    elif message_type == "warning":
+        print(f"{type_color}{timestamp} {category_prefix} WARNING: {message}{reset_color}")
+    elif message_type == "success":
+        print(f"{type_color}{timestamp} {category_prefix} SUCCESS: {message}{reset_color}")
+    else:
+        print(f"{category_color}{timestamp} {category_prefix} DEBUG: {message}{reset_color}")
+
+# Convenience functions for common message types
+def debug_info(message, category="general", verbosity_level=1):
+    """Print an info debug message"""
+    debug_print(message, category, verbosity_level, "info")
+
+def debug_success(message, category="general", verbosity_level=1):
+    """Print a success debug message"""
+    debug_print(message, category, verbosity_level, "success")
+
+def debug_warning(message, category="general", verbosity_level=1):
+    """Print a warning debug message"""
+    debug_print(message, category, verbosity_level, "warning")
+
+def debug_error(message, category="general", verbosity_level=1):
+    """Print an error debug message"""
+    debug_print(message, category, verbosity_level, "error")
 
 ###################
 ## TOKEN MANAGEMENT CLASS
@@ -84,9 +119,9 @@ class InstagramTokenManager:
                 expires_str = data.get('expires_at')
                 if expires_str:
                     self.token_expires_at = datetime.fromisoformat(expires_str)
-            print(f"DEBUG: Loaded token from file, expires at: {self.token_expires_at}")
+            debug_print(f"Loaded token from file, expires at: {self.token_expires_at}", "token", 1, "success")
         except Exception as e:
-            print(f"ERROR: Could not load token from file: {e}")
+            debug_print(f"Could not load token from file: {e}", "token", 1, "error")
     
     def save_token_to_file(self):
         """Save token to file"""
@@ -98,14 +133,14 @@ class InstagramTokenManager:
             }
             with open(self.token_file, 'w') as f:
                 json.dump(data, f, indent=2)
-            print(f"DEBUG: Token saved to file")
+            debug_print("Token saved to file", "token", 1, "success")
         except Exception as e:
-            print(f"ERROR: Could not save token to file: {e}")
+            debug_print(f"Could not save token to file: {e}", "token", 1, "error")
     
     def get_token_info(self):
         """Get information about current token"""
         if not self.current_token:
-            print("ERROR: No token available")
+            debug_print("No token available", "token", 1, "error")
             return None
         
         try:
@@ -113,23 +148,23 @@ class InstagramTokenManager:
             params = {'access_token': self.current_token}
             
             response = requests.get(url, params=params, timeout=HTTP_TIMEOUT_SECONDS)
-            print(f"DEBUG: Token validation response: {response.status_code}")
+            debug_print(f"Token validation response: {response.status_code}", "api", 2)
             
             if response.status_code == HTTP_SUCCESS_CODE:
                 # Token is valid, estimate expiration (60 days from now for long-lived)
                 self.token_expires_at = datetime.now() + timedelta(days=LONG_LIVED_TOKEN_DURATION_DAYS)
                 return response.json()
             else:
-                print(f"ERROR: Token validation failed: {response.json()}")
+                debug_print(f"Token validation failed: {response.json()}", "api", 1, "error")
                 return None
                 
         except Exception as e:
-            print(f"ERROR: Token validation error: {e}")
+            debug_print(f"Token validation error: {e}", "api", 1, "error")
             return None
     
     def exchange_for_long_lived_token(self, short_lived_token):
         """Exchange short-lived token for long-lived token"""
-        print("DEBUG: Exchanging for long-lived token...")
+        debug_print("Exchanging for long-lived token...", "token", 1)
         
         url = f"{GRAPH_URL}oauth/access_token"
         params = {
@@ -141,7 +176,7 @@ class InstagramTokenManager:
         
         try:
             response = requests.get(url, params=params, timeout=HTTP_TIMEOUT_SECONDS)
-            print(f"DEBUG: Exchange response status: {response.status_code}")
+            debug_print(f"Exchange response status: {response.status_code}", "api", 2)
             
             if response.status_code == HTTP_SUCCESS_CODE:
                 data = response.json()
@@ -151,14 +186,14 @@ class InstagramTokenManager:
                 self.token_expires_at = datetime.now() + timedelta(days=LONG_LIVED_TOKEN_DURATION_DAYS)
                 
                 self.save_token_to_file()
-                print(f"DEBUG: Long-lived token obtained, expires: {self.token_expires_at}")
+                debug_print(f"Long-lived token obtained, expires: {self.token_expires_at}", "token", 1, "success")
                 return True
             else:
-                print(f"ERROR: Token exchange failed: {response.json()}")
+                debug_print(f"Token exchange failed: {response.json()}", "api", 1, "error")
                 return False
                 
         except Exception as e:
-            print(f"ERROR: Token exchange error: {e}")
+            debug_print(f"Token exchange error: {e}", "api", 1, "error")
             return False
     
     def is_token_valid(self):
@@ -173,7 +208,7 @@ class InstagramTokenManager:
         # Check if token expires within warning days (refresh early)
         warning_time = datetime.now() + timedelta(days=TOKEN_EXPIRY_WARNING_DAYS)
         if self.token_expires_at <= warning_time:
-            print(f"WARNING: Token expires soon: {self.token_expires_at}")
+            debug_print(f"Token expires soon: {self.token_expires_at}", "token", 1, "warning")
             return False
         
         return True
@@ -183,8 +218,8 @@ class InstagramTokenManager:
         if self.is_token_valid():
             return self.current_token
         
-        print("ERROR: Token invalid or expiring soon. Please generate a new token manually.")
-        print("Go to: https://developers.facebook.com/tools/explorer/")
+        debug_print("Token invalid or expiring soon. Please generate a new token manually.", "token", 1, "error")
+        debug_print("Go to: https://developers.facebook.com/tools/explorer/", "token", 1, "info")
         return None
 
 ###################
